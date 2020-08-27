@@ -8,13 +8,14 @@ with open('queue.json', 'r') as data_file:
 data = json.loads(json_data)
 
 host = data['hosts']
-g = Gauge('redis_queue_length', 'Length of queues', ['host','queue_name','queue_type'])
+g = Gauge('redis_List_length', 'Length of List', ['host','list'])
 
 def generate():
     for h, q_type in host.items():
         s = h.split(':')
         r = redis.Redis(host=s[0], port=s[1])
-
+        print(g)
+        print(r)
         try:
             r.ping()            
         except redis.ConnectionError:
@@ -22,18 +23,30 @@ def generate():
             continue
 
         for q in q_type:
-            qlist = data['queue_type'][q]
-        
-            for qname in qlist:
-                a = r.llen(qname)
-                g.labels(h,qname,q).set(a)
+            print("q is ")
+            print(q)
+            # qlist = data['queue_type'][q]
+            a = r.llen(q)
+            print(a)
+            g.labels(h,q).set(a)
+            print('stats')
+            print(g)
+            # for qname in qlist:
+            #     print("qname is ")
+            #     print(qname)
+            #     a = r.llen(qname)
+            #     g.labels(h,qname,q).set(a)
+            #     print(g)
 
 
 metrics_app = make_wsgi_app()
 
 def my_app(environ, start_fn):
+    print('started')
     if environ['PATH_INFO'] == '/metrics':
+        print('started')
         generate()
+        print('generate complete')
         return metrics_app(environ, start_fn)
 
 httpd = make_server('', 8000, my_app)
